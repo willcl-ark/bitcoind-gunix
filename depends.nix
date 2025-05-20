@@ -26,8 +26,9 @@ let
       inherit sha256;
     };
 
-  qt_version = "5.15.14";
-  qt_url_prefix = "https://download.qt.io/official_releases/qt/5.15/${qt_version}/submodules";
+  qt_version = "6.7.3";
+  qt_url_prefix = "https://download.qt.io/archive/qt/6.7/${qt_version}/submodules";
+  qt_top_prefix = "https://code.qt.io/cgit/qt/qt5.git/plain";
 
   # Nix builds are pure. We can't access the Internet during builds - so we
   # make the depends sources avaliable beforehand.
@@ -36,16 +37,6 @@ let
       urlPrefix = "https://archives.boost.io/release/1.81.0/source";
       file = "boost_1_81_0.tar.gz";
       sha256 = "205666dea9f6a7cfed87c7a6dfbeb52a2c1b9de55712c9c1a87735d7181452b6";
-    };
-    libevent = {
-      urlPrefix = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable";
-      file = "libevent-2.1.12-stable.tar.gz";
-      sha256 = "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb";
-    };
-    freetype = {
-      urlPrefix = "https://download.savannah.gnu.org/releases/freetype";
-      file = "freetype-2.11.0.tar.xz";
-      sha256 = "8bee39bd3968c4804b70614a0a3ad597299ad0e824bc8aad5ce8aaf48067bde7";
     };
     expat = {
       urlPrefix = "https://github.com/libexpat/libexpat/releases/download/R_2_4_1";
@@ -56,6 +47,21 @@ let
       urlPrefix = "https://www.freedesktop.org/software/fontconfig/release";
       file = "fontconfig-2.12.6.tar.gz";
       sha256 = "064b9ebf060c9e77011733ac9dc0e2ce92870b574cca2405e11f5353a683c334";
+    };
+    freetype = {
+      urlPrefix = "https://download.savannah.gnu.org/releases/freetype";
+      file = "freetype-2.11.0.tar.xz";
+      sha256 = "8bee39bd3968c4804b70614a0a3ad597299ad0e824bc8aad5ce8aaf48067bde7";
+    };
+    libevent = {
+      urlPrefix = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable";
+      file = "libevent-2.1.12-stable.tar.gz";
+      sha256 = "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb";
+    };
+    native_capnp = {
+      urlPrefix = "https://capnproto.org/";
+      file = "capnproto-c++-1.1.0.tar.gz";
+      sha256 = "07167580e563f5e821e3b2af1c238c16ec7181612650c5901330fa9a0da50939";
     };
     xcb-proto = {
       urlPrefix = "https://xorg.freedesktop.org/archive/individual/proto";
@@ -87,6 +93,11 @@ let
       file = "xcb-util-0.4.0.tar.gz";
       sha256 = "0ed0934e2ef4ddff53fcc70fc64fb16fe766cd41ee00330312e20a985fd927a7";
     };
+    libxcb-util-cursor = {
+      urlPrefix = "https://xcb.freedesktop.org/dist";
+      file = "xcb-util-cursor-0.1.5.tar.gz";
+      sha256 = "0e9c5446dc6f3beb8af6ebfcc9e27bcc6da6fe2860f7fc07b99144dfa568e93b";
+    };
     libxcb-util-render = {
       urlPrefix = "https://xcb.freedesktop.org/dist";
       file = "xcb-util-renderutil-0.3.9.tar.gz";
@@ -114,23 +125,38 @@ let
     };
     qt = {
       urlPrefix = qt_url_prefix;
-      file = "qtbase-everywhere-opensource-src-${qt_version}.tar.xz";
-      sha256 = "500d3b390048e9538c28b5f523dfea6936f9c2e10d24ab46580ff57d430b98be";
+      file = "qtbase-everywhere-src-${qt_version}.tar.xz";
+      sha256 = "8ccbb9ab055205ac76632c9eeddd1ed6fc66936fc56afc2ed0fd5d9e23da3097";
+    };
+    qt-top-cmakelists = {
+      urlPrefix = qt_top_prefix;
+      file = "CMakeLists.txt?h=${qt_version}";
+      sha256 = "9fb720a633c0c0a21c31fe62a34bf617726fed72480d4064f29ca5d6973d513f";
+    };
+    qt-top-cmake-ecmoptional = {
+      urlPrefix = "${qt_top_prefix}/cmake";
+      file = "ECMOptionalAddSubdirectory.cmake?h=${qt_version}";
+      sha256 = "97ee8bbfcb0a4bdcc6c1af77e467a1da0c5b386c42be2aa97d840247af5f6f70";
+    };
+    qt-top-cmake-helpers = {
+      urlPrefix = "${qt_top_prefix}/cmake";
+      file = "QtTopLevelHelpers.cmake?h=${qt_version}";
+      sha256 = "5ac2a7159ee27b5b86d26ecff44922e7b8f319aa847b7b5766dc17932fd4a294";
     };
     qt-translations = {
       urlPrefix = qt_url_prefix;
-      file = "qttranslations-everywhere-opensource-src-${qt_version}.tar.xz";
-      sha256 = "5b94d1a11b566908622fcca2f8b799744d2f8a68da20be4caa5953ed63b10489";
+      file = "qttranslations-everywhere-src-${qt_version}.tar.xz";
+      sha256 = "dcc762acac043b9bb5e4d369b6d6f53e0ecfcf76a408fe0db5f7ef071c9d6dc8";
     };
     qt-tools = {
       urlPrefix = qt_url_prefix;
-      file = "qttools-everywhere-opensource-src-${qt_version}.tar.xz";
-      sha256 = "12061a85baf5f4de8fbc795e1d3872b706f340211b9e70962caeffc6f5e89563";
+      file = "qttools-everywhere-src-${qt_version}.tar.xz";
+      sha256 = "f03bb7df619cd9ac9dba110e30b7bcab5dd88eb8bdc9cc752563b4367233203f";
     };
     sqlite = {
-      urlPrefix = "https://sqlite.org/2020";
-      file = "sqlite-autoconf-3380500.tar.gz";
-      sha256 = "5af07de982ba658fd91a03170c945f99c971f6955bc79df3266544373e39869c";
+      urlPrefix = "https://sqlite.org/2024";
+      file = "sqlite-autoconf-3460100.tar.gz";
+      sha256 = "67d3fe6d268e6eaddcae3727fce58fcc8e9c53869bdd07a0c61e38ddf2965071";
     };
     zeromq = {
       urlPrefix = "https://github.com/zeromq/libzmq/releases/download/v4.3.5";
