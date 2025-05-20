@@ -1,5 +1,5 @@
 { lib
-, gcc12Stdenv
+, gcc13Stdenv
 , fetchurl
 # build-inputs
 , pkg-config
@@ -11,6 +11,7 @@
 , which # Qt
 , perl # Qt
 , cmake
+, curl
 #
 , version
 , url
@@ -192,7 +193,7 @@ let
     ) dependsSources;
 
 in
-gcc12Stdenv.mkDerivation rec {
+gcc13Stdenv.mkDerivation rec {
   name = "bitcoin-${version}-depends";
   pname = "bitcoin-depends";
 
@@ -216,7 +217,7 @@ gcc12Stdenv.mkDerivation rec {
 
   dontUseCmakeConfigure = true;
 
-  nativeBuildInputs = [ pkg-config cmake ];
+  nativeBuildInputs = [ pkg-config cmake curl ];
   buildInputs = [
     python3 bison libtool autoconf automake
     which perl # Qt

@@ -1,5 +1,5 @@
 {
-  gcc12Stdenv
+  gcc13Stdenv
 , fetchurl
 # build-inputs
 , pkg-config
@@ -12,32 +12,16 @@
 , depends
 }:
 
-gcc12Stdenv.mkDerivation rec {
+gcc13Stdenv.mkDerivation rec {
   pname = "bitcoind";
   name = "bitcoind";
   src = fetchurl { inherit url sha256; };
 
   nativeBuildInputs = [ pkg-config cmake hexdump which ];
   buildInputs = [ ];
-
-  preConfigure = ''
-    export CONFIG_SITE=${depends}/share/config.site
-
-    # checking for QMinimalIntegrationPlugin looks in the depends/x86_64-pc-linux-gnu
-    # dir. We might be able to control that with a ENV var, but just symlinking works
-    # too
-    ln -s ${depends} depends/x86_64-pc-linux-gnu
-  '';
-
-  configureFlags = [
-    "--with-boost-libdir=${depends}/include/boost"
-    "--with-gui"
-
-    "--disable-tests"
-    "--disable-bench"
-    "--disable-fuzz-binary"
+  cmakeFlags = [
+    "-DCMAKE_TOOLCHAIN_FILE=${depends}/x86_64-pc-linux-gnu/toolchain.cmake"
   ];
-
   preFixup = ''
     ./contrib/devtools/split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
   '';
