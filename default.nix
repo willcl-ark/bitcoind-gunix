@@ -209,6 +209,12 @@ let
 
     buildInputs = [];
 
+    preUnpack = ''
+      # TODO: set up source date epoch
+      # export TAR_OPTIONS="--owner=0 --group=0 --numeric-owner --mtime='$SOURCE_DATE_EPOCH' --sort=name"
+      export TAR_OPTIONS="--owner=0 --group=0 --numeric-owner --sort=name"
+      export TZ="UTC"
+    '';
     postUnpack = ''
       mkdir -p $sourceRoot/depends/sources
       ${lib.concatStringsSep "\n" cpDependsSources}
@@ -216,6 +222,10 @@ let
 
     preConfigure = ''
       cd depends && make NO_QT=1 -j $NIX_BUILD_CORES && cd ..
+
+      # These are only for bitcoin, not depends
+      export CFLAGS="-O2 -g"
+      export LDFLAGS="-Wl,--as-needed -static-libstdc++ -Wl,-O2"
     '';
 
     # Configure variables
@@ -226,6 +236,11 @@ let
 
     cmakeFlags = [
       "-DCMAKE_TOOLCHAIN_FILE=/build/source/depends/x86_64-pc-linux-gnu/toolchain.cmake"
+      "-DREDUCE_EXPORTS=ON"
+      "-DBUILD_BENCH=OFF"
+      "-DBUILD_GUI_TESTS=OFF"
+      "-DBUILD_FUZZ_BINARY=OFF"
+      "-DWITH_CCACHE=OFF"
     ];
 
     # postInstallPhase = ''
