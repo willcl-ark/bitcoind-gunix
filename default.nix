@@ -214,26 +214,23 @@ let
       ${lib.concatStringsSep "\n" cpDependsSources}
     '';
 
+    preConfigure = ''
+      cd depends && make NO_QT=1 -j $NIX_BUILD_CORES && cd ..
+    '';
+
+    # Configure variables
+    dontAddStaticConfigureFlags = true;
+    dontAddDisableDepTrack = true;
+    # dontFixLibtool = true;
+    dontDisableStatic = true;
+
     cmakeFlags = [
       "-DCMAKE_TOOLCHAIN_FILE=/build/source/depends/x86_64-pc-linux-gnu/toolchain.cmake"
     ];
 
-    preConfigure = ''
-      cd depends && make NO_QT=1 -j $NIX_BUILD_CORES
-      cd ..
-    '';
-
-    buildPhase = ''
-      cmake --build . -j $NIX_BUILD_CORES
-    '';
-
-    installPhase = ''
-      mkdir -p $out/bin
-      cp bin/bitcoind $out/bin/
-      cp bin/bitcoin-cli $out/bin/
-      cp bin/bitcoin-tx $out/bin/
-      ./split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
-    '';
+    # postInstallPhase = ''
+    #   ./split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
+    # '';
 
     dontStrip = true;
     doCheck = false;
