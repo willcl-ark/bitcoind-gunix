@@ -220,20 +220,23 @@ let
       ${lib.concatStringsSep "\n" cpDependsSources}
     '';
 
+    # Configure
     preConfigure = ''
+      export NIX_DONT_SET_RPATH=1
       cd depends && make NO_QT=1 -j $NIX_BUILD_CORES && cd ..
 
-      # These are only for bitcoin, not depends
       export CFLAGS="-O2 -g"
-      export LDFLAGS="-Wl,--as-needed -static-libstdc++ -Wl,-O2"
+      # TODO: add dynamic linker back here?
+      # export LDFLAGS="-Wl,--as-needed -static-libstdc++ -Wl,-O2"
+      export LDFLAGS="-Wl,--as-needed -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 -static-libstdc++ -Wl,-O2"
+      export CXXFLAGS="$CFLAGS"
     '';
-
-    # Configure variables
     dontAddStaticConfigureFlags = true;
     dontAddDisableDepTrack = true;
     # dontFixLibtool = true;
     dontDisableStatic = true;
 
+    # Build
     cmakeFlags = [
       "-DCMAKE_TOOLCHAIN_FILE=/build/source/depends/x86_64-pc-linux-gnu/toolchain.cmake"
       "-DREDUCE_EXPORTS=ON"
@@ -242,14 +245,42 @@ let
       "-DBUILD_FUZZ_BINARY=OFF"
       "-DWITH_CCACHE=OFF"
     ];
-
-    # postInstallPhase = ''
-    #   ./split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
-    # '';
-
-    dontStrip = true;
-    doCheck = false;
     enableParallelBuilding = true;
+
+    # Fixup phase
+    dontStrip = true;
+    dontPatchELF = true;
+    dontPatchShebangs = true;
+    dontPruneLibtoolFiles = true;
+    separateDebugInfo = false;
+    # Strip debug info from binaries ~ like contrib/devtools/strip-debug.sh
+    postFixup = ''
+      for file in $out/bin/*; do
+        if [[ -f "$file" && -x "$file" ]]; then
+          # Extract debug info
+          ${pkgs.binutils}/bin/objcopy --enable-deterministic-archives -p --only-keep-debug "$file" "$file.dbg"
+
+          # Strip debug info
+          ${pkgs.binutils}/bin/objcopy --enable-deterministic-archives -p --strip-debug "$file" "$file.stripped"
+
+          # Strip all symbols
+          ${pkgs.binutils}/bin/strip --enable-deterministic-archives -p -s "$file.stripped"
+
+          # Add debug link
+          ${pkgs.binutils}/bin/objcopy --enable-deterministic-archives -p --add-gnu-debuglink="$file.debug" "$file.stripped"
+
+          # Replace original with stripped binary
+          mv "$file.stripped" "$file"
+
+          # Move debug info to debug output (if separateDebugInfo is enabled)
+          if [[ -d $debug ]]; then
+            mkdir -p $debug/lib/debug
+            mv "$file.debug" $debug/lib/debug/
+          fi
+        fi
+      done
+    '';
+
   };
 in {
   inherit bitcoin;
