@@ -3,16 +3,22 @@
 with pkgs;
 
 let
+  # TODO: This relies on my dependency provider branch
   version = "73cadb40470243b162a4aee5d95674ca38544330";
-  url = "https://github.com/willcl-ark/bitcoin/archive/${version}.tar.gz";
-  sha256 = "sha256-ltxy5KfnDvfucx0xMLN8c8oEuKfPYj/RoaP06X3mBu8=";
+  bitcoinSrc = fetchFromGitHub {
+    owner = "willcl-ark";
+    repo = "bitcoin";
+    rev = version;
+    sha256 = "sha256-diE3XYxCvlZIF9fQvppi9TWhRiNUqBXw8COsNz/ib84=";
+  };
 
-  dependsDir = "bitcoin-${version}/depends";
+  dependsDir = "$sourceRoot/depends";
 
-  mkFetchSource = {urlPrefix, file, sha256}:
+  mkFetchSource = {urlPrefix, file, sha256, extractedFile ? file}:
     fetchurl {
-      url = "${urlPrefix}/${file}" ;
+      url = "${urlPrefix}/${file}";
       inherit sha256;
+      name = extractedFile;
     };
 
   qt_version = "6.7.3";
@@ -179,72 +185,56 @@ let
   };
 
   # copies the 'dependsSources.file' into the depends/sources dir for each depends
-  cpDependsSources = lib.attrsets.mapAttrsToList (name: value:
-    let
-      targetFile = value.extractedFile or value.file;
-    in
-    "cp ${mkFetchSource { inherit (value) urlPrefix file sha256; }} ${dependsDir}/sources/${targetFile}\n"
-  ) dependsSources;
+  cpDependsSources = lib.attrsets.mapAttrsToList (name: value: ''
+    cp ${mkFetchSource value} $sourceRoot/depends/sources/${value.extractedFile or value.file}
+  '') dependsSources;
 
   bitcoin = gcc13Stdenv.mkDerivation {
     pname = "bitcoin";
-    name = "bitcoin-${version}";
+    inherit version;
 
-    srcs = [
-      (fetchurl { inherit url sha256; }) # Bitcoin Core
-    ];
+    src = bitcoinSrc;
 
     nativeBuildInputs = [
-      pkg-config
-      cmake
-      hexdump
-      which
-      python3
-      bison
-      libtool
       autoconf
       automake
+      bison
+      cmake
       curl
+      hexdump
+      libtool
+      pkg-config
+      python3
+      which
     ];
 
-    buildInputs = [ ];
+    buildInputs = [];
 
-    # Commenting out as we shouldn't need this, I don't think
-    # patches = [
-    #   ./patches/depends-qt-readd-PKG_CONFIG_SYSROOT_DIR-env-var.patch
-    # ];
-
-    # Copy all dependency sources to avoid network access during build
     postUnpack = ''
-      echo "Setting up dependency sources..."
-      mkdir -p ${dependsDir}/sources
+      mkdir -p $sourceRoot/depends/sources
       ${lib.concatStringsSep "\n" cpDependsSources}
     '';
 
-    configurePhase = ''
-      # Build depends
-      echo "Building dependencies..."
-      (cd depends && make NO_QT=1 -j12)
+    cmakeFlags = [
+      "-DCMAKE_TOOLCHAIN_FILE=$sourceRoot/depends/x86_64-pc-linux-gnu/toolchain.cmake"
+    ];
 
-      # Configure
-      echo "Configuring with toolchain..."
-      cmake -B build -DCMAKE_TOOLCHAIN_FILE=/build/${dependsDir}/x86_64-pc-linux-gnu/toolchain.cmake --trace-expand
+    preConfigure = ''
+      echo "Building dependencies..."
+      cd $sourceRoot/depends && make NO_QT=1 -j $NIX_BUILD_CORES
+      cd $sourceRoot
     '';
 
     buildPhase = ''
-      echo "Building Bitcoin..."
-      cmake --build build --parallel
+      cmake --build . -j $NIX_BUILD_CORES
     '';
 
     installPhase = ''
-      echo "Installing Bitcoin..."
       mkdir -p $out/bin
-      cp build/bin/bitcoind $out/bin/
-      cp build/bin/bitcoin-cli $out/bin/
-      cp build/bin/bitcoin-tx $out/bin/
-
-      # Run split-debug script
-      ./contrib/devtools/split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
+      cp bin/bitcoind $out/bin/
+      cp bin/bitcoin-cli $out/bin/
+      cp bin/bitcoin-tx $out/bin/
+      ${bitcoinSrc}/contrib/devtools/split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
     '';
 
     dontStrip = true;
