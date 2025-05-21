@@ -132,16 +132,19 @@ let
     qt-top-cmakelists = {
       urlPrefix = qt_top_prefix;
       file = "CMakeLists.txt?h=${qt_version}";
+      extractedFile = "CMakeLists.txt";
       sha256 = "9fb720a633c0c0a21c31fe62a34bf617726fed72480d4064f29ca5d6973d513f";
     };
     qt-top-cmake-ecmoptional = {
       urlPrefix = "${qt_top_prefix}/cmake";
       file = "ECMOptionalAddSubdirectory.cmake?h=${qt_version}";
+      extractedFile = "ECMOptionalAddSubdirectory.cmake";
       sha256 = "97ee8bbfcb0a4bdcc6c1af77e467a1da0c5b386c42be2aa97d840247af5f6f70";
     };
     qt-top-cmake-helpers = {
       urlPrefix = "${qt_top_prefix}/cmake";
       file = "QtTopLevelHelpers.cmake?h=${qt_version}";
+      extractedFile = "QtTopLevelHelpers.cmake";
       sha256 = "5ac2a7159ee27b5b86d26ecff44922e7b8f319aa847b7b5766dc17932fd4a294";
     };
     qt-translations = {
@@ -189,8 +192,11 @@ let
 
   # copies the 'dependsSources.file' into the depends/sources dir for each depends
   cpDependsSources = lib.attrsets.mapAttrsToList (name: value:
-    "cp ${mkFetchSource value} ${dependsDir}/sources/${value.file}\n"
-    ) dependsSources;
+    let
+      targetFile = value.extractedFile or value.file;
+    in
+    "cp ${mkFetchSource { inherit (value) urlPrefix file sha256; }} ${dependsDir}/sources/${targetFile}\n"
+  ) dependsSources;
 
 in
 gcc13Stdenv.mkDerivation rec {
