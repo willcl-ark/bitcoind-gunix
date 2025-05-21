@@ -12,8 +12,6 @@ let
     sha256 = "sha256-diE3XYxCvlZIF9fQvppi9TWhRiNUqBXw8COsNz/ib84=";
   };
 
-  dependsDir = "$sourceRoot/depends";
-
   mkFetchSource = {urlPrefix, file, sha256, extractedFile ? file}:
     fetchurl {
       url = "${urlPrefix}/${file}";
@@ -205,6 +203,7 @@ let
       libtool
       pkg-config
       python3
+      tree
       which
     ];
 
@@ -216,13 +215,12 @@ let
     '';
 
     cmakeFlags = [
-      "-DCMAKE_TOOLCHAIN_FILE=$sourceRoot/depends/x86_64-pc-linux-gnu/toolchain.cmake"
+      "-DCMAKE_TOOLCHAIN_FILE=/build/source/depends/x86_64-pc-linux-gnu/toolchain.cmake"
     ];
 
     preConfigure = ''
-      echo "Building dependencies..."
-      cd $sourceRoot/depends && make NO_QT=1 -j $NIX_BUILD_CORES
-      cd $sourceRoot
+      cd depends && make NO_QT=1 -j $NIX_BUILD_CORES
+      cd ..
     '';
 
     buildPhase = ''
@@ -234,7 +232,7 @@ let
       cp bin/bitcoind $out/bin/
       cp bin/bitcoin-cli $out/bin/
       cp bin/bitcoin-tx $out/bin/
-      ${bitcoinSrc}/contrib/devtools/split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
+      ./split-debug.sh $out/bin/bitcoind $out/bin/bitcoind-s $out/bin/bitcoind-d
     '';
 
     dontStrip = true;
