@@ -236,6 +236,6 @@ gcc13Stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   postFixup = ''
-    mv x86_64-pc-linux-gnu/* $out/
+    mv x86_64-pc-linux-gnu $out/
   '';
 }
